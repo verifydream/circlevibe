@@ -1,0 +1,49 @@
+services:
+  app:
+    build: .
+    container_name: circlevibe-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://circlevibe:circlevibe@db:5432/circlevibe?schema=public
+      AUTH_SECRET: ${AUTH_SECRET:-change-me-in-production}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_APP_NAME: CircleVibe
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4o-mini}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - circlevibe
+
+  db:
+    image: postgres:16-alpine
+    container_name: circlevibe-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: circlevibe
+      POSTGRES_USER: circlevibe
+      POSTGRES_PASSWORD: circlevibe
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U circlevibe"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - circlevibe
+
+volumes:
+  pgdata:
+
+networks:
+  circlevibe:
+    driver: bridge
