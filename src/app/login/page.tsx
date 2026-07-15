@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,34 +10,31 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    const result = await signIn("email", {
-      email,
-      redirect: false,
-      callbackUrl: "/circles",
-    });
-    setLoading(false);
-    if (!result?.error) setSent(true);
-  };
 
-  if (sent) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center px-4">
-        <Card className="max-w-md text-center">
-          <div className="mb-4 text-4xl">📧</div>
-          <CardTitle>Check email kamu!</CardTitle>
-          <CardDescription className="mt-2">
-            Magic link terkirim ke <strong>{email}</strong>
-          </CardDescription>
-        </Card>
-      </div>
-    );
-  }
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError("Email atau password salah");
+    } else {
+      router.push("/circles");
+      router.refresh();
+    }
+  };
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center px-4">
@@ -44,7 +42,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <div className="mb-2 text-3xl">⭕</div>
           <CardTitle>Masuk ke CircleVibe</CardTitle>
-          <CardDescription>Masukkan email untuk magic link</CardDescription>
+          <CardDescription>Masukkan email & password kamu</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
@@ -55,8 +53,19 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
+          <Input
+            label="Password"
+            type="password"
+            placeholder="Password kamu"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          {error && (
+            <p className="text-sm text-red-500 text-center">{error}</p>
+          )}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Mengirim..." : "Kirim Magic Link →"}
+            {loading ? "Masuk..." : "Masuk →"}
           </Button>
         </form>
         <div className="mt-6 text-center text-sm text-gray-500">

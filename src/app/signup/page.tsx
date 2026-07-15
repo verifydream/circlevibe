@@ -9,35 +9,64 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import Link from "next/link";
 
 export default function SignupPage() {
-  const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+  const [done, setDone] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setLoading(true);
-    const result = await signIn("email", {
-      email,
-      redirect: false,
-      callbackUrl: "/onboarding",
-    });
-    setLoading(false);
-    if (!result?.error) {
-      setSent(true);
+
+    try {
+      // Register user
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Gagal daftar");
+        setLoading(false);
+        return;
+      }
+
+      // Auto login after register
+      const loginResult = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      setLoading(false);
+
+      if (loginResult?.error) {
+        setError("Login gagal setelah register");
+      } else {
+        setDone(true);
+        setTimeout(() => router.push("/onboarding"), 1500);
+      }
+    } catch {
+      setError("Terjadi kesalahan");
+      setLoading(false);
     }
   };
 
-  if (sent) {
+  if (done) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center px-4">
         <Card className="max-w-md text-center">
-          <div className="mb-4 text-4xl">📧</div>
-          <CardTitle>Check email kamu!</CardTitle>
+          <div className="mb-4 text-4xl">✅</div>
+          <CardTitle>Register berhasil!</CardTitle>
           <CardDescription className="mt-2">
-            Kami sudah kirim magic link ke <strong>{email}</strong>.
-            Klik link di email untuk lanjut.
+            Mengarahkan ke onboarding...
           </CardDescription>
         </Card>
       </div>
@@ -70,8 +99,20 @@ export default function SignupPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
+          <Input
+            label="Password"
+            type="password"
+            placeholder="Minimal 6 karakter"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+          />
+          {error && (
+            <p className="text-sm text-red-500 text-center">{error}</p>
+          )}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Mengirim..." : "Kirim Magic Link →"}
+            {loading ? "Mendaftar..." : "Daftar →"}
           </Button>
         </form>
         <div className="mt-6 text-center text-sm text-gray-500">
