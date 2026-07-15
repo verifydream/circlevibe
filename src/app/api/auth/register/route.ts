@@ -14,21 +14,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Password minimal 6 karakter" }, { status: 400 });
     }
 
-    // Check existing user
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       return NextResponse.json({ error: "Email sudah terdaftar" }, { status: 400 });
     }
 
-    // Hash password and store in emailVerified field (MVP shortcut)
-    // In production, add a dedicated `password` column to User
     const hashedPassword = await bcrypt.hash(password, 12);
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
-        emailVerified: new Date(hashedPassword), // MVP: store hash here
+        password: hashedPassword,
+        emailVerified: new Date(), // mark as verified immediately
       },
     });
 

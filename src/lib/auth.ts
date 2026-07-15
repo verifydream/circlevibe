@@ -21,16 +21,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { email: credentials.email as string },
         });
 
-        if (!user || !user.emailVerified) return null;
+        if (!user?.password) return null;
 
-        // password stored in emailVerified field as hash (MVP shortcut)
-        // In production, use a dedicated password field
         const isValid = await bcrypt.compare(
           credentials.password as string,
-          user.emailVerified.toISOString()
+          user.password
         );
 
-        return isValid ? { id: user.id, name: user.name, email: user.email, image: user.image } : null;
+        return isValid
+          ? { id: user.id, name: user.name, email: user.email, image: user.image }
+          : null;
       },
     }),
     ...(process.env.GOOGLE_CLIENT_ID
